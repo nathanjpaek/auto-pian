@@ -169,6 +169,15 @@ class FingeringEvaluator:
         print(f"Highest Match Rate (M_high):     {results['M_high']:.4f}")
         print(f"Soft Match Rate (M_soft):        {results['M_soft']:.4f}")
         print(f"{'=' * 40}\n")
+
+    def convert_fingering_to_int(self, finger_str):
+        if finger_str.isdigit() or (finger_str.startswith('-') and finger_str[1:].isdigit()):
+            return int(finger_str)
+        elif '_' in finger_str:
+            first_finger = finger_str.split('_')[0]
+            return int(first_finger)
+        else:
+            return 1
     
     def load_test_data(self, pieces=None, annotator_ids=None):
         ground_truth_fingerings = []
@@ -203,6 +212,12 @@ class FingeringEvaluator:
             ground_truth_fingerings.append(fingering)
             piece_ids.append((piece_id, annotator_id))
             lengths.append(len(fingering))
+
+            converted_ground_truth = []
+            for sequence in ground_truth_fingerings:
+                converted_sequence = [self.convert_fingering_to_int(str(finger)) for finger in sequence]
+                converted_ground_truth.append(converted_sequence)
+            ground_truth_fingerings = converted_ground_truth
             
         return ground_truth_fingerings, piece_ids, lengths
 
