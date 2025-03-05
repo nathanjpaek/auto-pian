@@ -16,6 +16,36 @@ class FingeringEvaluator:
         self.fingering_files_path = PATH_TO_DATASET_FOLDER
         self.metadata_path = PATH_TO_METADATA
 
+        self.fingerings = [
+            '1', '2', '3', '4', '5',
+            '1_', '2_', '3_', '4_', '5_',
+            '-1', '-2', '-3', '-4', '-5',
+            '1_2', '1_3', '1_4', '1_5',
+            '1_-2', '1_-3', '1_-4', '1_-5',
+            '2_1', '2_3', '2_4', '2_5',
+            '2_-1', '2_-3', '2_-4', '2_-5',
+            '3_1', '3_2', '3_4', '3_5',
+            '3_-1', '3_-2', '3_-4', '3_-5',
+            '4_1', '4_2', '4_3', '4_5',
+            '4_-1', '4_-2', '4_-3', '4_-5',
+            '5_1', '5_2', '5_3', '5_4',
+            '5_-1', '5_-2', '5_-3', '5_-4',
+            '-1_-2', '-1_-3', '-1_-4', '-1_-5',
+            '-1_2', '-1_3', '-1_4', '-1_5',
+            '-2_-3', '-2_-4', '-2_-5', '-2_-1',
+            '-2_3', '-2_4', '-2_5', '-2_1',
+            '-3_-4', '-3_-5', '-3_-2', '-3_-1',
+            '-3_4', '-3_5', '-3_2', '-3_1',
+            '-4_-5', '-4_-3', '-4_-2', '-4_-1',
+            '-4_5', '-4_3', '-4_2', '-4_1',
+            '-5_-1', '-5_-2', '-5_-3', '-5_-4',
+            '-5_1', '-5_2', '-5_3', '-5_4',
+            '1_2_3', '1_2_4', '1_2_5', '1_3_4', '1_3_5', '1_4_5', '2_3_4', '2_3_5', '2_4_5', '3_4_5',
+            '-1_1', '-2_2', '-3_3', '-4_4', '-5_5', '1_-1', '2_-2', '3_-3', '4_-4', '5_-5', '0'
+        ]
+        self.finger_to_int_mapping = {f: i for i, f in enumerate(self.fingerings)}
+        self.int_to_finger_mapping = {i: f for i, f in enumerate(self.fingerings)}
+
         if os.path.exists(self.metadata_path):
             self.metadata = pd.read_csv(
                 self.metadata_path, 
@@ -161,6 +191,7 @@ class FingeringEvaluator:
         
         return results
     
+    
     def print_results(self, results, method_name="Model"):
         print(f"\n{'=' * 40}")
         print(f"{method_name} Evaluation Results")
@@ -170,15 +201,14 @@ class FingeringEvaluator:
         print(f"Soft Match Rate (M_soft):        {results['M_soft']:.4f}")
         print(f"{'=' * 40}\n")
 
+
     def convert_fingering_to_int(self, finger_str):
-        if finger_str.isdigit() or (finger_str.startswith('-') and finger_str[1:].isdigit()):
-            return int(finger_str)
-        elif '_' in finger_str:
-            first_finger = finger_str.split('_')[0]
-            return int(first_finger)
+        if finger_str in self.finger_to_int_mapping:
+            return self.finger_to_int_mapping[finger_str]
         else:
-            return 1
-    
+            return self.finger_to_int_mapping.get('0', 0)
+
+
     def load_test_data(self, pieces=None, annotator_ids=None):
         ground_truth_fingerings = []
         piece_ids = []
@@ -212,14 +242,15 @@ class FingeringEvaluator:
             ground_truth_fingerings.append(fingering)
             piece_ids.append((piece_id, annotator_id))
             lengths.append(len(fingering))
+        
+        converted_ground_truth = []
+        for sequence in ground_truth_fingerings:
+            converted_sequence = [self.convert_fingering_to_int(str(finger)) for finger in sequence]
+            converted_ground_truth.append(converted_sequence)
+        ground_truth_fingerings = converted_ground_truth
 
-            converted_ground_truth = []
-            for sequence in ground_truth_fingerings:
-                converted_sequence = [self.convert_fingering_to_int(str(finger)) for finger in sequence]
-                converted_ground_truth.append(converted_sequence)
-            ground_truth_fingerings = converted_ground_truth
-            
         return ground_truth_fingerings, piece_ids, lengths
+
 
 def evaluate_fingering_method(predicted_fingerings, ground_truth_fingerings, piece_ids, 
                               lengths=None, hand='right', method_name="Model", 
